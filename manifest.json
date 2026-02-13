@@ -1,7 +1,7 @@
 {
-  "name": "Тактичний урбаніст",
-  "short_name": "Урбаніст",
-  "description": "Стратегічна тактична гра для мобільних та десктоп пристроїв",
+  "name": "Taktyczny Urbanista",
+  "short_name": "Urbanista",
+  "description": "Strategiczna gra taktyczna na urządzenia mobilne i komputer",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1b1b1b",
