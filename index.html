@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Taktyczny Urbanista</title>
+<link rel="manifest" href="manifest-pl.json">
 <style>
 body{margin:0;font-family:Arial;background:#1b1b1b;color:#fff}
 .board{max-width:420px;margin:auto;padding:15px}
@@ -21,19 +22,12 @@ select{background:#444;color:#fff;border:none;border-radius:6px;padding:4px}
 .modalBox{background:#2b2b2b;padding:16px;border-radius:10px;width:85%;text-align:center}
 </style>
 </head>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-  .then(() => console.log('Service Worker зареєстрований'))
-  .catch(err => console.log('Помилка Service Worker:', err));
-}
-</script>
 <body>
 <div class="board">
 <h2>🏙 Taktyczny Urbanista</h2>
 
 <div class="row">
-<span>Liczba graczy</span>
+<span>Gracze</span>
 <select id="players" onchange="setupPlayers()">
 <option>1</option><option>2</option><option>3</option>
 <option>4</option><option>5</option><option>6</option>
@@ -45,16 +39,16 @@ if ('serviceWorker' in navigator) {
 <select id="you"></select>
 </div>
 
-<div class="row">⚡ Energia: <b id="energy"></b></div>
+<div class="row">🔋 Energia: <b id="energy"></b></div>
 <div class="row">🏭 Przemysł: <b id="industry"></b></div>
 <div class="row">⚔️ Armia: <b id="army"></b></div>
 <div class="row">🛡 Obrona: <b id="defense"></b></div>
 <div class="row"><b id="phase"></b></div>
 
 <div class="row">
-<button class="blue full" onclick="build('industry',1)">Buduj 🏭  1⚡</button>
-<button class="red full" onclick="build('army',5)">Buduj ⚔️  5⚡</button>
-<button class="green full" onclick="build('defense',4)">Buduj 🛡 4⚡</button>
+<button class="blue full" onclick="build('industry',1)">Budować 🏭 1⚡</button>
+<button class="red full" onclick="build('army',5)">Budować ⚔️ 5⚡</button>
+<button class="green full" onclick="build('defense',4)">Budować 🛡 4⚡</button>
 </div>
 <div class="row">
 <button class="orange full" onclick="drawCard()">🎲 Karta wydarzenia</button>
@@ -62,7 +56,7 @@ if ('serviceWorker' in navigator) {
 <div class="row">
 <button class="blue full" onclick="nextTurn()">⏭ Następna tura</button>
 </div>
-<div class="row"><span>Symulacja akcji sąsiada:</span></div>
+<div class="row"><span>Symulacja działań sąsiada:</span></div>
 <div class="row">
 <button class="orange full" onclick="neighborSpy()">🕵️ Sąsiad używa Szpiega</button>
 </div>
@@ -70,7 +64,7 @@ if ('serviceWorker' in navigator) {
 <button class="orange full" onclick="neighborAdmiral()">⚓ Sąsiad używa Admirała</button>
 </div>
 <div class="row">
-<button class="red full" onclick="resetGame()">🔁 Rozpocznij od nowa</button>
+<button class="red full" onclick="resetGame()">🔁 Zacząć od nowa</button>
 </div>
 
 <div class="modal" id="modal">
@@ -83,7 +77,7 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <script>
-// Wszystkie funkcje i logika pozostają dokładnie takie same jak w wersji ukraińskiej
+// ---------------------- JS gry pozostaje niezmieniony ----------------------
 let energy,industry,army,defense,phase;
 let pendingAction=null;
 let deck=[],discard=[];
@@ -149,42 +143,25 @@ function closeModal(){pendingAction=null; document.getElementById("modal").style
 
 function drawCard(){
  if(phase!==0) return;
-
  if(!isYourTurn()){showModal("Tura innego gracza — karta nie działa na Ciebie","info"); phase=1; update(); return;}
-
  const type = drawFromDeck();
- if(!type){showModal("Wszystkie karty zostały użyte","info"); return;}
-
-if(type==="spy"){
+ if(!type){showModal("Wszystkie karty zostały wykorzystane","info"); return;}
+ if(type==="spy"){
    showModal("🕵️ Szpieg\nUżyć przeciwko innemu graczowi za 2 energii?","choice",
      ()=>{
-       if(energy>=2){
-           energy-=2;
-           showModal("🕵️ Szpieg użyty przeciwko sąsiadowi","info");
-       } else {
-           showModal("Za mało energii","info");
-       }
+       if(energy>=2){energy-=2; showModal("🕵️ Szpieg użyty przeciwko sąsiadowi","info");}
+       else showModal("Brak wystarczającej energii","info");
    });
-
-} else if(type==="admiral"){
-
+ } else if(type==="admiral"){
    showModal("⚓ Admirał\nUżyć przeciwko innemu graczowi za 6 energii?","choice",
      ()=>{
-       if(energy>=6){
-           energy-=6;
-           showModal("⚓ Admirał użyty przeciwko sąsiadowi","info");
-       } else {
-           showModal("Za mało energii","info");
-       }
+       if(energy>=6){energy-=6; showModal("⚓ Admirał użyty przeciwko sąsiadowi","info");}
+       else showModal("Brak wystarczającej energii","info");
    });
-
- } else if(type==="disaster"){
-   if(industry>0) industry--; showModal("🌪 Katastrofa — utracono 1 przemysł","info");
- } else if(type==="crisis"){
-   energy=0; showModal("📉 Kryzys gospodarczy — cała energia utracona","info");
- } else if(type==="sabotage"){
-   if(defense>0){defense--; showModal("💣 Sabotaż — utracono 1 obronę","info");}
-   else{let lost=Math.min(2,industry); if(lost>=industry && energy===0 && industry-lost===0) lost=industry-1; if(lost<0) lost=0; industry-=lost; showModal(`💣 Sabotaż — utracono ${lost} przemysł`,"info");}}
+ } else if(type==="disaster"){if(industry>0) industry--; showModal("🌪 Katastrofa — utracono 1 przemysł","info");}
+ else if(type==="crisis"){energy=0; showModal("📉 Kryzys gospodarczy — utracono całą energię","info");}
+ else if(type==="sabotage"){if(defense>0){defense--; showModal("💣 Sabotaż — utracono 1 obronę","info");}
+ else{let lost=Math.min(2,industry); if(lost>=industry && energy===0 && industry-lost===0) lost=industry-1; if(lost<0) lost=0; industry-=lost; showModal(`💣 Sabotaż — utracono ${lost} przemysł`,"info");}}
  phase=1; update();
 }
 
@@ -199,26 +176,10 @@ function build(type,cost){
 
 function nextTurn(){if(phase!==1) return; energy+=industry; if(energy>8) energy=8; turn++; phase=0; update();}
 
-// Symulacja akcji sąsiada
-function neighborSpy(){
- if(defense>0) defense--;
- else{
-     if(energy>=1) industry = Math.max(0, industry-2);
-     else industry = Math.max(1, industry-2);
- }
- showModal("🕵️ Sąsiad użył Szpiega","info"); update();
-}
-
-function neighborAdmiral(){
- if(army>0) army--;
- else{
-     if(energy>=1) industry = Math.max(0, industry-2);
-     else industry = Math.max(1, industry-2);
- }
- showModal("⚓ Sąsiad użył Admirała","info"); update();
-}
+function neighborSpy(){if(defense>0) defense--; else{if(energy>=1) industry=Math.max(0,industry-2); else industry=Math.max(1,industry-2);} showModal("🕵️ Sąsiad użył Szpiega","info"); update();}
+function neighborAdmiral(){if(army>0) army--; else{if(energy>=1) industry=Math.max(0,industry-2); else industry=Math.max(1,industry-2);} showModal("⚓ Sąsiad użył Admirała","info"); update();}
 
 setupPlayers();
 </script>
 </body>
-</html>
+</html></html>
