@@ -1,39 +1,57 @@
-const CACHE_NAME = 'urbanist-cache-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index_pl.html',
-  '/style.css', // якщо стилі окремо
-  '/main.js',   // якщо JS окремо
-  '/icon-192.png',
-  '/icon-512.png'
+const CACHE_NAME = 'urbanista-cache-v1';
+const FILES_TO_CACHE = [
+  './index.html',
+  './manifest-pl.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-// Встановлення SW і кешування
-self.addEventListener('install', event => {
+// Додаткові файли: CSS, JS (якщо окремо)
+const ADDITIONAL_FILES = [
+  // './style.css',  // якщо зовнішній CSS
+  // './game.js'     // якщо окремий JS
+];
+
+self.addEventListener('install', (event) => {
+  console.log('[SW] Instalacja Service Worker');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Cacheowanie plików...');
+      return cache.addAll(FILES_TO_CACHE.concat(ADDITIONAL_FILES));
+    })
   );
+  self.skipWaiting();
 });
 
-// Активація SW
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Aktywacja Service Worker');
   event.waitUntil(
-    caches.keys().then(keys => 
+    caches.keys().then((keys) =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) return caches.delete(key);
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log('[SW] Usuwanie starego cache:', key);
+            return caches.delete(key);
+          }
         })
       )
     )
   );
+  self.clients.claim();
 });
 
-// Перехоплення запитів та повернення кешу
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      if (cached) {
+        return cached;
+      }
+      return fetch(event.request).catch(() => {
+        // fallback, якщо потрібно
+        if (event.request.destination === 'document') {
+          return caches.match('./index.html');
+        }
+      });
+    })
   );
 });
